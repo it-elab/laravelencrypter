@@ -25,13 +25,13 @@ type encrypter struct {
 	cipher string // encrypt method: AES-128-CBC or AES-256-CBC
 }
 
-type Payload struct {
+type payloadString struct {
 	IV    string `json:"iv"`
 	Value string `json:"value"`
 	Mac   string `json:"mac"`
 }
 
-type PayloadEncrypted struct {
+type payloadBytes struct {
 	IV    []byte
 	Value []byte
 	Mac   []byte
@@ -72,29 +72,29 @@ func (e *encrypter) Encrypt(value string, serialize bool) (string, error) {
 	}
 
 	var (
-		p  Payload
-		pe PayloadEncrypted
+		ps payloadString
+		pb payloadBytes
 	)
 
 	// IV
-	pe.IV = randomBytes()
-	p.IV = base64.StdEncoding.EncodeToString(pe.IV) // random_bytes(openssl_cipher_iv_length($this->cipher))
+	pb.IV = randomBytes()
+	ps.IV = base64.StdEncoding.EncodeToString(pb.IV) // random_bytes(openssl_cipher_iv_length($this->cipher))
 
 	// Value
 	aesBlock, err := aes.NewCipher(e.key)
 	if err != nil {
 		return "", errors.New("aes.NewCipher failed:" + err.Error())
 	}
-	blockMode := cipher.NewCBCEncrypter(aesBlock, pe.IV)
-	src := PKCS7Padding([]byte(value), aes.BlockSize)
-	pe.Value = make([]byte, len(src))
-	blockMode.CryptBlocks(pe.Value, src)
-	p.Value = base64.StdEncoding.EncodeToString(pe.Value)
+	blockMode := cipher.NewCBCEncrypter(aesBlock, pb.IV)
+	src := pkcs7Padding([]byte(value), aes.BlockSize)
+	pb.Value = make([]byte, len(src))
+	blockMode.CryptBlocks(pb.Value, src)
+	ps.Value = base64.StdEncoding.EncodeToString(pb.Value)
 
 	// Mac
-	p.Mac = e.hash(p.IV, p.Value)
+	ps.Mac = e.hash(ps.IV, ps.Value)
 
-	serializedEncrypted, err := json.Marshal(&p)
+	serializedEncrypted, err := json.Marshal(&ps)
 	if err != nil {
 		return "", errors.New("json.Marshal failed: " + err.Error())
 	}
@@ -103,7 +103,7 @@ func (e *encrypter) Encrypt(value string, serialize bool) (string, error) {
 }
 
 func (e *encrypter) Decrypt(playload string, serialize bool) (plaintext string, err error) {
-	pe, err := e.getJsonPayload(playload)
+	pb, err := e.getJsonPayload(playload)
 	if err != nil {
 		return "", err
 	}
@@ -112,11 +112,11 @@ func (e *encrypter) Decrypt(playload string, serialize bool) (plaintext string, 
 	if err != nil {
 		return "", err
 	}
-	mode := cipher.NewCBCDecrypter(block, pe.IV)
+	mode := cipher.NewCBCDecrypter(block, pb.IV)
 
-	plainbytes := make([]byte, len(pe.Value))
-	mode.CryptBlocks(plainbytes, pe.Value)
-	plainbytes = PKCS7UnPadding(plainbytes)
+	plainbytes := make([]byte, len(pb.Value))
+	mode.CryptBlocks(plainbytes, pb.Value)
+	plainbytes = pkcs7Unpadding(plainbytes)
 
 	// Value
 	value := string(plainbytes)
@@ -131,10 +131,10 @@ func (e *encrypter) Decrypt(playload string, serialize bool) (plaintext string, 
 	return value, nil
 }
 
-func (e *encrypter) getJsonPayload(payload string) (*PayloadEncrypted, error) {
+func (e *encrypter) getJsonPayload(payload string) (*payloadBytes, error) {
 	var (
-		p  Payload
-		pe PayloadEncrypted
+		ps payloadString
+		pb payloadBytes
 	)
 
 	decodedBytes, err := base64.StdEncoding.DecodeString(payload)
@@ -142,42 +142,42 @@ func (e *encrypter) getJsonPayload(payload string) (*PayloadEncrypted, error) {
 		return nil, errors.New("the payload is invalid.1")
 	}
 
-	err = json.Unmarshal(decodedBytes, &p)
+	err = json.Unmarshal(decodedBytes, &ps)
 	if err != nil {
 		return nil, errors.New("the payload is invalid.2")
 	}
 
-	pe.Value, err = base64.StdEncoding.DecodeString(p.Value)
+	pb.Value, err = base64.StdEncoding.DecodeString(ps.Value)
 	if err != nil {
 		return nil, errors.New("the payload is invalid.3")
 	}
 
-	pe.IV, err = base64.StdEncoding.DecodeString(p.IV)
+	pb.IV, err = base64.StdEncoding.DecodeString(ps.IV)
 	if err != nil {
 		return nil, errors.New("the payload is invalid.4")
 	}
 
-	pe.Mac, err = base64.StdEncoding.DecodeString(p.Mac)
+	pb.Mac, err = base64.StdEncoding.DecodeString(ps.Mac)
 	if err != nil {
 		return nil, errors.New("the payload is invalid.5")
 	}
 
-	if !e.validatePayload(&pe) {
+	if !e.validatePayload(&pb) {
 		return nil, errors.New("the payload is invalid.6")
 	}
 
-	if !e.validateMac(&p) {
+	if !e.validateMac(&ps) {
 		return nil, errors.New("the payload is invalid.7")
 	}
 
-	return &pe, nil
+	return &pb, nil
 }
 
-func (e *encrypter) validatePayload(pe *PayloadEncrypted) bool {
+func (e *encrypter) validatePayload(pe *payloadBytes) bool {
 	return len(pe.IV) == aes.BlockSize
 }
 
-func (e *encrypter) validateMac(p *Payload) bool {
+func (e *encrypter) validateMac(p *payloadString) bool {
 	rnd := randomBytes()
 	calculated := e.calculateMac(p, rnd)
 
@@ -190,11 +190,11 @@ func (e *encrypter) validateMac(p *Payload) bool {
 func (e *encrypter) hash(iv, value string) string {
 	h := hmac.New(sha256.New, []byte(e.key))
 	h.Write([]byte(iv + value))
-	return hex.EncodeToString(h.Sum(nil)) // see https://github.com/php/php-src/blob/98fb565c7448cd455b8d24df5f6be8fcf9330fd7/ext/hash/hash.c#L566
-	//return base64.StdEncoding.EncodeToString(h.Sum(nil)) // raw_output
+	return hex.EncodeToString(h.Sum(nil)) // lowercase hexits, see https://github.com/php/php-src/blob/98fb565c7448cd455b8d24df5f6be8fcf9330fd7/ext/hash/hash.c#L566
+	//return h.Sum(nil) // raw_output
 }
 
-func (e *encrypter) calculateMac(p *Payload, bytes []byte) []byte {
+func (e *encrypter) calculateMac(p *payloadString, bytes []byte) []byte {
 	content := e.hash(p.IV, p.Value)
 	h := hmac.New(sha256.New, bytes)
 	h.Write([]byte(content))
@@ -209,13 +209,13 @@ func (e *encrypter) supported() bool {
 		(e.cipher == "AES-256-CBC" && length == 32)
 }
 
-func PKCS7Padding(src []byte, blockSize int) []byte {
+func pkcs7Padding(src []byte, blockSize int) []byte {
 	padding := blockSize - len(src)%blockSize
 	padtext := bytes.Repeat([]byte{byte(padding)}, padding)
 	return append(src, padtext...)
 }
 
-func PKCS7UnPadding(src []byte) []byte {
+func pkcs7Unpadding(src []byte) []byte {
 	length := len(src)
 	unpadding := int(src[length-1])
 	return src[:(length - unpadding)]

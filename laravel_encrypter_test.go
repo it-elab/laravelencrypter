@@ -47,7 +47,7 @@ func TestWithSerialization(t *testing.T) {
 		t.Errorf("fail - %s", err)
 	}
 	if plaintext == originaltext {
-		t.Log("pass decrypt serialized php variable")
+		t.Log("pass decrypt serialized php string variable")
 	} else {
 		t.Error("fail \nexpected:", originaltext, "\ngot     :", plaintext)
 	}
@@ -55,7 +55,7 @@ func TestWithSerialization(t *testing.T) {
 	// ...
 	plaintext1, err := e.Decrypt(ciphertext, true)
 	if plaintext1 == originaltext1 {
-		t.Log("pass decrypt unserialized php variable")
+		t.Log("pass decrypt unserialized php string variable")
 	} else {
 		t.Error("fail \nexpected:", originaltext1, "\ngot     :", plaintext1)
 	}
