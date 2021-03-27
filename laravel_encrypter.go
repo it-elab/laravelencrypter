@@ -77,7 +77,7 @@ func (e *encrypter) Encrypt(value string, serialize bool) (string, error) {
 	)
 
 	// IV
-	pb.IV = randomBytes()
+	pb.IV = randomBytes(aes.BlockSize)
 	ps.IV = base64.StdEncoding.EncodeToString(pb.IV) // random_bytes(openssl_cipher_iv_length($this->cipher))
 
 	// Value
@@ -173,16 +173,16 @@ func (e *encrypter) getJsonPayload(payload string) (*payloadBytes, error) {
 	return &pb, nil
 }
 
-func (e *encrypter) validatePayload(pe *payloadBytes) bool {
-	return len(pe.IV) == aes.BlockSize
+func (e *encrypter) validatePayload(pb *payloadBytes) bool {
+	return len(pb.IV) == aes.BlockSize
 }
 
-func (e *encrypter) validateMac(p *payloadString) bool {
-	rnd := randomBytes()
-	calculated := e.calculateMac(p, rnd)
+func (e *encrypter) validateMac(ps *payloadString) bool {
+	rnd := randomBytes(aes.BlockSize)
+	calculated := e.calculateMac(ps, rnd)
 
 	h := hmac.New(sha256.New, rnd)
-	h.Write([]byte(p.Mac))
+	h.Write([]byte(ps.Mac))
 
 	return bytes.Equal(h.Sum(nil), calculated)
 }
@@ -194,8 +194,8 @@ func (e *encrypter) hash(iv, value string) string {
 	//return h.Sum(nil) // raw_output
 }
 
-func (e *encrypter) calculateMac(p *payloadString, bytes []byte) []byte {
-	content := e.hash(p.IV, p.Value)
+func (e *encrypter) calculateMac(ps *payloadString, bytes []byte) []byte {
+	content := e.hash(ps.IV, ps.Value)
 	h := hmac.New(sha256.New, bytes)
 	h.Write([]byte(content))
 
@@ -221,8 +221,8 @@ func pkcs7Unpadding(src []byte) []byte {
 	return src[:(length - unpadding)]
 }
 
-func randomBytes() []byte {
-	rnd := make([]byte, aes.BlockSize)
+func randomBytes(len int) []byte {
+	rnd := make([]byte, len)
 	rand.Read(rnd)
 	return rnd
 }
