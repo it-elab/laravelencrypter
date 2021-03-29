@@ -8,7 +8,7 @@ For replace laravel web page/api with golang gradually.
 key := "base64:KGiEzh6m8sDmkikodA4yn1iWAG6sUgHfZoN6xlZVHC0=" // see laravel .env file
 originaltext := `57616ee390aee4bcaf28ed7a815877d8`
 
-encrypter, err := New(key, "")
+encrypter, err := golaravelencrypter.New(key, AES256CBC)
 // ...
 chipertext, err := encrypter.Encrypt(originaltext, false)// app('encrypter')->encrypt()
 
