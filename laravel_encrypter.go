@@ -49,7 +49,7 @@ func New(key string, cipher string) (*encrypter, error) {
 
 	e := &encrypter{
 		//key:    key,
-		cipher: cipher, // it seems no meaning in go crypto package
+		cipher: cipher, // 256 or 128 doesn't make much sense in go crypto package?
 	}
 
 	if strings.HasPrefix(key, "base64:") {
