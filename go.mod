@@ -1,4 +1,4 @@
-module golaravelencrypter
+module wja513/golaravelencrypter
 
 go 1.15
 
