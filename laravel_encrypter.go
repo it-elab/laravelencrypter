@@ -15,6 +15,9 @@ import (
 	"strings"
 )
 
+const AES128CBC = "AES-128-CBC"
+const AES256CBC = "AES-256-CBC"
+
 type Encrypter interface {
 	Encrypt(value string, serialize bool) (ciphertext string, err error)
 	Decrypt(playload string, serialize bool) (plaintext string, err error)
@@ -46,13 +49,14 @@ func New(key string, cipher string) (*encrypter, error) {
 
 	e := &encrypter{
 		//key:    key,
-		cipher: cipher,
+		cipher: cipher, // it seems no meaning in go crypto package
 	}
 
 	if strings.HasPrefix(key, "base64:") {
-		if e.key, err = base64.StdEncoding.DecodeString(key[7:]); err != nil {
-			return nil, err
-		}
+		key = key[7:]
+	}
+	if e.key, err = base64.StdEncoding.DecodeString(key); err != nil {
+		return nil, err
 	}
 
 	if !e.supported() {
