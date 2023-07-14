@@ -11,7 +11,8 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
-	"github.com/wulijun/go-php-serialize/phpserialize"
+	//"github.com/wulijun/go-php-serialize/phpserialize"
+	"github.com/elliotchance/phpserialize"
 	"strings"
 )
 
@@ -66,19 +67,18 @@ func New(key string, cipher string) (*encrypter, error) {
 	return e, nil
 }
 
-func (e *encrypter) Encrypt(value string, serialize bool) (string, error) {
-	var err error
-	if serialize {
-		value, err = phpserialize.Encode(value)
-		if err != nil {
-			return "", errors.New("phpserialize.Encode failed: " + err.Error())
-		}
-	}
-
+func (e *encrypter) Encrypt(value string, serialize bool) (ciphertext string, err error) {
 	var (
-		ps payloadString
-		pb payloadBytes
+		plainbytes []byte
+		ps         payloadString
+		pb         payloadBytes
 	)
+
+	if serialize {
+		plainbytes = phpserialize.MarshalString(value)
+	} else {
+		plainbytes = []byte(value)
+	}
 
 	// IV
 	pb.IV = randomBytes(aes.BlockSize)
@@ -90,7 +90,7 @@ func (e *encrypter) Encrypt(value string, serialize bool) (string, error) {
 		return "", errors.New("aes.NewCipher failed:" + err.Error())
 	}
 	blockMode := cipher.NewCBCEncrypter(aesBlock, pb.IV)
-	src := pkcs7Padding([]byte(value), aes.BlockSize)
+	src := pkcs7Padding(plainbytes, aes.BlockSize)
 	pb.Value = make([]byte, len(src))
 	blockMode.CryptBlocks(pb.Value, src)
 	ps.Value = base64.StdEncoding.EncodeToString(pb.Value)
@@ -109,12 +109,12 @@ func (e *encrypter) Encrypt(value string, serialize bool) (string, error) {
 func (e *encrypter) Decrypt(playload string, serialize bool) (plaintext string, err error) {
 	pb, err := e.getJsonPayload(playload)
 	if err != nil {
-		return "", err
+		return
 	}
 
 	block, err := aes.NewCipher(e.key)
 	if err != nil {
-		return "", err
+		return
 	}
 	mode := cipher.NewCBCDecrypter(block, pb.IV)
 
@@ -123,16 +123,15 @@ func (e *encrypter) Decrypt(playload string, serialize bool) (plaintext string, 
 	plainbytes = pkcs7Unpadding(plainbytes)
 
 	// Value
-	value := string(plainbytes)
 	if serialize {
-		v, err := phpserialize.Decode(value)
+		plaintext, err = phpserialize.UnmarshalString(plainbytes)
 		if err != nil {
 			return "", errors.New("phpserialize.Decode failed: " + err.Error())
 		}
-		value = v.(string)
+		return
 	}
 
-	return value, nil
+	return string(plainbytes), nil
 }
 
 func (e *encrypter) getJsonPayload(payload string) (*payloadBytes, error) {

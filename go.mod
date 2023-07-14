@@ -1,5 +1,5 @@
 module golaravelencrypter
 
-go 1.15
+go 1.18
 
-require github.com/wulijun/go-php-serialize v0.0.0-20131104125240-bfe692b0100e
+require github.com/elliotchance/phpserialize v1.3.3

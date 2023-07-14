@@ -63,7 +63,7 @@ func TestWithSerialization(t *testing.T) {
 
 func TestAES128Decryption(t *testing.T) {
 	key := "base64:HfEy8zJBQn7EzR2w+B+j5w=="
-	originaltext := `s:6:"123456"`
+	originaltext := `s:6:"123456";`
 	ciphertext := "eyJpdiI6ImMwbkg5YXBLUGhZRW1jYWlZaklPY2c9PSIsInZhbHVlIjoiUDdOaEZOQ3h3QWdQSFM3M3pUSEIyQT09IiwibWFjIjoiMDI3Zjk0NWY2NTg1MzBiMGVjMjBkNzVlNzBhM2MxOWVlYmVlZTQxNzA1M2FkNmI2OWRhOWQ3Y2JmNjNiODNhMiJ9"
 
 	e, err := New(key, AES128CBC)
