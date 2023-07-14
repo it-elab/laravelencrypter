@@ -1,4 +1,4 @@
-module github.com/wja513/golaravelencrypter
+module golaravelencrypter
 
 go 1.15
 
