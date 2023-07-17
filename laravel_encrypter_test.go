@@ -54,15 +54,15 @@ func TestWithSerialization(t *testing.T) {
 	}
 
 	// ...
-	plaintext1, err := e.Decrypt(ciphertext)
+	serializedPHPStr, err := e.Decrypt(ciphertext)
 	if err != nil {
 		t.Errorf("fail - %s", err)
 	}
-	phpstr, err := phpserialize.UnmarshalString([]byte(plaintext1))
+	plaintext1, err := phpserialize.UnmarshalString([]byte(serializedPHPStr))
 	if err != nil {
 		t.Errorf("fail - %s", err)
 	}
-	if phpstr == originaltext1 {
+	if plaintext1 == originaltext1 {
 		t.Log("pass decrypt serialized php string variable")
 	} else {
 		t.Error("fail \nexpected:", originaltext1, "\ngot     :", plaintext1)

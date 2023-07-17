@@ -201,17 +201,20 @@ func (e *encrypter) supported() bool {
 func pkcs7Padding(src []byte, blockSize int) []byte {
 	padding := blockSize - len(src)%blockSize
 	padtext := bytes.Repeat([]byte{byte(padding)}, padding)
+
 	return append(src, padtext...)
 }
 
 func pkcs7Unpadding(src []byte) []byte {
 	length := len(src)
 	unpadding := int(src[length-1])
+
 	return src[:(length - unpadding)]
 }
 
 func randomBytes(len int) []byte {
 	rnd := make([]byte, len)
 	rand.Read(rnd)
+
 	return rnd
 }
