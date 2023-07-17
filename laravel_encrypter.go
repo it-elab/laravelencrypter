@@ -19,8 +19,8 @@ const AES128CBC = "AES-128-CBC"
 const AES256CBC = "AES-256-CBC"
 
 type Encrypter interface {
-	Encrypt(value string, serialize bool) (ciphertext string, err error)
-	Decrypt(playload string, serialize bool) (plaintext string, err error)
+	Encrypt(value string) (ciphertext string, err error)
+	Decrypt(playload string) (plaintext string, err error)
 }
 
 type encrypter struct {
@@ -40,7 +40,7 @@ type payloadBytes struct {
 	Mac   []byte
 }
 
-func New(key, cipher string) (*encrypter, error) {
+func New(key, cipher string) (Encrypter, error) {
 	var err error
 
 	e := &encrypter{
