@@ -1,6 +1,7 @@
 package golaravelencrypter
 
 import (
+	"github.com/elliotchance/phpserialize"
 	"testing"
 )
 
@@ -13,13 +14,13 @@ func TestBasically(t *testing.T) {
 		t.Fatalf("fail - %s", err)
 	}
 
-	chipertext, err := e.Encrypt(originaltext, false)
+	chipertext, err := e.Encrypt(originaltext)
 	if err != nil {
 		t.Fatalf("fail - %s", err)
 	}
 	t.Log("chipertext: \n", chipertext)
 
-	plaintext, err := e.Decrypt(chipertext, false)
+	plaintext, err := e.Decrypt(chipertext)
 	if err != nil {
 		t.Fatalf("fail - %s", err)
 	}
@@ -42,7 +43,7 @@ func TestWithSerialization(t *testing.T) {
 		t.Fatalf("fail - %s", err)
 	}
 
-	plaintext, err := e.Decrypt(ciphertext, false)
+	plaintext, err := e.Decrypt(ciphertext)
 	if err != nil {
 		t.Errorf("fail - %s", err)
 	}
@@ -53,8 +54,15 @@ func TestWithSerialization(t *testing.T) {
 	}
 
 	// ...
-	plaintext1, err := e.Decrypt(ciphertext, true)
-	if plaintext1 == originaltext1 {
+	plaintext1, err := e.Decrypt(ciphertext)
+	if err != nil {
+		t.Errorf("fail - %s", err)
+	}
+	phpstr, err := phpserialize.UnmarshalString([]byte(plaintext1))
+	if err != nil {
+		t.Errorf("fail - %s", err)
+	}
+	if phpstr == originaltext1 {
 		t.Log("pass decrypt serialized php string variable")
 	} else {
 		t.Error("fail \nexpected:", originaltext1, "\ngot     :", plaintext1)
@@ -71,7 +79,7 @@ func TestAES128Decryption(t *testing.T) {
 		t.Fatalf("fail - %s", err)
 	}
 
-	plaintext, err := e.Decrypt(ciphertext, false)
+	plaintext, err := e.Decrypt(ciphertext)
 	if err != nil {
 		t.Errorf("fail - %s", err)
 	}

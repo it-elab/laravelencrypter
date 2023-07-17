@@ -10,10 +10,11 @@ originaltext := `57616ee390aee4bcaf28ed7a815877d8`
 
 encrypter, err := golaravelencrypter.New(key, AES256CBC)
 // ...
-chipertext, err := encrypter.Encrypt(originaltext, false)// app('encrypter')->encrypt()
+chipertext, err := encrypter.Encrypt(originaltext)// app('encrypter')->encrypt()
 
 // ...
-plaintext, err := encrypter.Decrypt(chipertext, false)
+plaintext, err := encrypter.Decrypt(chipertext)
+
 ```
 
 

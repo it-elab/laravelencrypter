@@ -11,8 +11,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
-	//"github.com/wulijun/go-php-serialize/phpserialize"
-	"github.com/elliotchance/phpserialize"
+
 	"strings"
 )
 
@@ -45,7 +44,7 @@ func New(key string, cipher string) (*encrypter, error) {
 	var err error
 
 	if cipher == "" {
-		cipher = "AES-256-CBC" // see php class EncryptionServiceProvider.
+		cipher = AES256CBC // see php class EncryptionServiceProvider.
 	}
 
 	e := &encrypter{
@@ -67,18 +66,14 @@ func New(key string, cipher string) (*encrypter, error) {
 	return e, nil
 }
 
-func (e *encrypter) Encrypt(value string, serialize bool) (ciphertext string, err error) {
+func (e *encrypter) Encrypt(value string) (ciphertext string, err error) {
 	var (
 		plainbytes []byte
 		ps         payloadString
 		pb         payloadBytes
 	)
 
-	if serialize {
-		plainbytes = phpserialize.MarshalString(value)
-	} else {
-		plainbytes = []byte(value)
-	}
+	plainbytes = []byte(value)
 
 	// IV
 	pb.IV = randomBytes(aes.BlockSize)
@@ -106,7 +101,7 @@ func (e *encrypter) Encrypt(value string, serialize bool) (ciphertext string, er
 	return base64.StdEncoding.EncodeToString(serializedEncrypted), nil
 }
 
-func (e *encrypter) Decrypt(playload string, serialize bool) (plaintext string, err error) {
+func (e *encrypter) Decrypt(playload string) (plaintext string, err error) {
 	pb, err := e.getJsonPayload(playload)
 	if err != nil {
 		return
@@ -121,15 +116,6 @@ func (e *encrypter) Decrypt(playload string, serialize bool) (plaintext string, 
 	plainbytes := make([]byte, len(pb.Value))
 	mode.CryptBlocks(plainbytes, pb.Value)
 	plainbytes = pkcs7Unpadding(plainbytes)
-
-	// Value
-	if serialize {
-		plaintext, err = phpserialize.UnmarshalString(plainbytes)
-		if err != nil {
-			return "", errors.New("phpserialize.Decode failed: " + err.Error())
-		}
-		return
-	}
 
 	return string(plainbytes), nil
 }
@@ -208,8 +194,8 @@ func (e *encrypter) calculateMac(ps *payloadString, bytes []byte) []byte {
 func (e *encrypter) supported() bool {
 	length := len(e.key)
 
-	return (e.cipher == "AES-128-CBC" && length == 16) ||
-		(e.cipher == "AES-256-CBC" && length == 32)
+	return (e.cipher == AES128CBC && length == 16) ||
+		(e.cipher == AES256CBC && length == 32)
 }
 
 func pkcs7Padding(src []byte, blockSize int) []byte {
