@@ -40,12 +40,8 @@ type payloadBytes struct {
 	Mac   []byte
 }
 
-func New(key string, cipher string) (*encrypter, error) {
+func New(key, cipher string) (*encrypter, error) {
 	var err error
-
-	if cipher == "" {
-		cipher = AES256CBC // see php class EncryptionServiceProvider.
-	}
 
 	e := &encrypter{
 		//key:    key,
