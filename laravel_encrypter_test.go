@@ -1,4 +1,4 @@
-package golaravelencrypter
+package laravelencrypter
 
 import (
 	"github.com/elliotchance/phpserialize"
